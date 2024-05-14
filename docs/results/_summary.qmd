@@ -1,0 +1,55 @@
+```{r}
+
+spreadSummary <- function(tbl, ...) {
+  #' Spread the Summary Statistics
+  #'
+  #' Spread the summary statistics from a given data frame containing `method`,
+  #' `mean`, and `sd`.
+  #'
+  #' @param A tidy data frame containing `method`, `mean`, and `sd`
+  #' @return A wide table with spread summary statistics
+
+  res <- tbl %>%
+    subset(..., select = -c(type, metric)) %>%
+    dplyr::mutate(
+      "stat" = sprintf("%.2f [%.2f]", mean, sd), mean = NULL, sd = NULL
+    ) %>%
+    tidyr::pivot_wider(names_from = method, values_from = stat) %>%
+    knitr::kable() %>%
+    kableExtra::kable_styling(font_size = 7)
+
+  return(res)
+}
+
+tar_load(metrics_summary)
+
+```
+
+```{r}
+#| tbl-cap: Summary statistics for `eigen` metric and `additive` approach
+
+metrics_summary %>% spreadSummary(.$type == "additive" & .$metric == "eigen")
+
+```
+
+```{r}
+#| tbl-cap: Summary statistics for `eigen` metric and `multiplicative` approach
+
+metrics_summary %>% spreadSummary(.$type == "multiplicative" & .$metric == "eigen")
+
+```
+
+```{r}
+#| tbl-cap: Summary statistics for `strength` metric and `additive` approach
+
+metrics_summary %>% spreadSummary(.$type == "additive" & .$metric == "strength")
+
+```
+
+```{r}
+#| tbl-cap: Summary statistics for `strength` metric and `multiplicative` approach
+
+metrics_summary %>% spreadSummary(.$type == "multiplicative" & .$metric == "strength")
+
+```
+

@@ -1,0 +1,22 @@
+```{r}
+#| tbl-cap: Intraclass correlation for all weighting methods
+
+tar_read(metrics_icc) %>%
+  dplyr::select(c(group:metric), dplyr::contains("_ICC")) %>%
+  tidyr::nest(data = c(group, dplyr::contains("_ICC"))) %>%
+  dplyr::mutate(
+    "mtx"  = purrr::map(data, ~ subset(.x, select = -group)),
+    "mean" = purrr::map(mtx, ~ colMeans(.x, na.rm = TRUE) %>% as.list() %>% data.frame())
+  ) %>%
+  tidyr::unnest(mean, names_sep = "_") %>%
+  subset(select = -c(data, mtx)) %>%
+  dplyr::rename_with(
+    .cols = dplyr::contains("mean_res"),
+    .fn   = ~ gsub(x = .x, "mean_res_", "") %>%
+      {gsub(x = ., "_", " ")} %>%
+      {gsub(x = ., "^", "Method ")}
+  ) %>%
+  knitr::kable()
+
+```
+

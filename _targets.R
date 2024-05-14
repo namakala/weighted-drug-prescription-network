@@ -20,7 +20,7 @@ tar_option_set(
 seed <- 1810
 
 # Set parameters for branching
-method <- c("base", "resultant", "product", "quotient", "log", "inv_log")
+method <- c("base", "resultant", "product", "quotient", "log", "inv_log", "density")
 type   <- c("additive", "multiplicative")
 
 # Set the analysis pipeline
@@ -29,6 +29,9 @@ list(
   # List and read the file paths
   tar_target(fpath, lsData(pattern = "*csv")),
   tar_target(tbls, readData(fpath), pattern = fpath, iteration = "list"),
+  
+  # Visualize the simulated weigting approahces
+  tar_target(plt_sim, vizSimWeight()),
 
   # Generate graph objects
   tar_map(
@@ -46,27 +49,31 @@ list(
     bindMetrics(
       list(
         metrics_base_additive,
-        metrics_base_multiplicative,
         metrics_resultant_additive,
-        metrics_resultant_multiplicative,
         metrics_product_additive,
-        metrics_product_multiplicative,
         metrics_quotient_additive,
-        metrics_quotient_multiplicative,
         metrics_log_additive,
-        metrics_log_multiplicative,
         metrics_inv_log_additive,
-        metrics_inv_log_multiplicative
+        metrics_density_additive,
+        metrics_base_multiplicative,
+        metrics_resultant_multiplicative,
+        metrics_product_multiplicative,
+        metrics_quotient_multiplicative,
+        metrics_log_multiplicative,
+        metrics_inv_log_multiplicative,
+        metrics_density_multiplicative
       )
     )
   ),
 
-  # Summarize the metrics
+  # Summarize the metrics and fit intraclass correlation models
   tar_target(metrics_summary, summarizeWeight(metrics)),
   tar_target(metrics_desc, describeWeight(metrics)),
-  tar_target(metrics_icc, getWeightICC(metrics)),
+  tar_target(metrics_cor, mapMetricsFun(metrics, fitCor)),
+  tar_target(metrics_icc, mapMetricsFun(metrics, fitICC)),
 
   # Generate documentation
+  tar_quarto(article, "docs/article.qmd"),
   tar_quarto(readme, "README.qmd", priority = 0)
 
 )

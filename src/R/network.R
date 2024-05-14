@@ -1,6 +1,33 @@
 # Functions to prepare for a graph object
 
-weightEntry <- function(n, dose = NULL, method = "quotient") {
+regularize <- function(x, type = "rescale") {
+  #' Min-Max Regularization
+  #'
+  #' Perform a regularization to a given set of numbers
+  #'
+  #' @param x A numeric vector
+  #' @param type The type of regularization, support either `clean`, `minmax`,
+  #' or `rescale`
+  #' @return A regularized numeric vector
+
+  if (length(x) == 1) {
+    return(x)
+  }
+
+  clean_x <- ifelse(x == Inf, 9e-2, x)
+  minval  <- min(clean_x, na.rm = TRUE)
+  maxval  <- max(clean_x, na.rm = TRUE)
+
+  res <- dplyr::case_when(
+    type == "clean"   ~ clean_x,
+    type == "minmax"  ~ {clean_x - minval} / {maxval - minval},
+    type == "rescale" ~ clean_x / maxval
+  )
+
+  return(res)
+}
+
+weightEntry <- function(n, dose = NULL, method = "log") {
   #' Weigh Entry
   #'
   #' Assign weight to the drug-prescription entry.
@@ -8,7 +35,7 @@ weightEntry <- function(n, dose = NULL, method = "quotient") {
   #' @param n The number of claim for the entry in an `atc_tbl`
   #' @param dose The dose of the entry in an `atc_tbl`
   #' @param method The weighting method, support either `resultant`, `product`,
-  #' `quotient`, `log`, and `inv_log`
+  #' `quotient`, `log`, `inv_log`, and `density`
   #' @return An array of weighted entry
 
   # Return only `n` for the baseline weight
@@ -17,10 +44,10 @@ weightEntry <- function(n, dose = NULL, method = "quotient") {
   }
 
   # Transform the weight as diff of log base 10
-  trans <- abs(1 - abs(log(dose)))
+  trans <- abs(n - abs(log(dose, base = 10))) %>% regularize()
 
   # Set special rules for inverted log weights to prevent Inf
-  inv_log <- {n / trans}
+  inv_log <- {n / trans} %>% regularize(type = "clean")
 
   # Set weighing methods
   res <- dplyr::case_when(
@@ -28,13 +55,14 @@ weightEntry <- function(n, dose = NULL, method = "quotient") {
     method == "product"   ~ n * dose,
     method == "quotient"  ~ n / dose,
     method == "log"       ~ trans,
-    method == "inv_log"   ~ inv_log
+    method == "inv_log"   ~ inv_log,
+    method == "density"   ~ {n + dnorm(dose, mean = n, sd = n / 3)} %>% regularize()
   )
 
   return(res)
 }
 
-pairByRow <- function(atc_tbl, ..., method = "quotient", type = "additive") {
+pairByRow <- function(atc_tbl, ..., method = "log", type = "additive") {
   #' Make Pairwise Row Combination
   #'
   #' Create a pairwise combination for each row of the input data frame.
@@ -86,7 +114,7 @@ pairByRow <- function(atc_tbl, ..., method = "quotient", type = "additive") {
   return(tbl_agg)
 }
 
-mkMatrix <- function(atc_tbl, ..., method = "quotient", type = "additive") {
+mkMatrix <- function(atc_tbl, ..., method = "log", type = "additive") {
   #' Make Matrix
   #'
   #' Create an adjacency matrix from a split ATC data frame
@@ -135,7 +163,7 @@ mkMatrix <- function(atc_tbl, ..., method = "quotient", type = "additive") {
   return(mtx)
 }
 
-mkGraph <- function(atc_tbl, method = "quotient", type = "additive") {
+mkGraph <- function(atc_tbl, method = "log", type = "additive") {
   #' Generate Graph Object
   #'
   #' Create a graph object from a pairwise combination data frame

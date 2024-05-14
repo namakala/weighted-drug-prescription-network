@@ -1,0 +1,58 @@
+```{r}
+
+reportCor <- function(tbl, ...){
+  #' Report Correlation
+  #'
+  #' Report correlation as a `kable` object
+  #'
+  #' @param tbl A tidy data frame of correlation results
+  #' @return A `kable` object
+
+  res <- tbl %>%
+    subset(..., select = -c(type, metric)) %>%
+    dplyr::mutate(
+      "Resultant" = sprintf("%.2f [%.2f - %.2f]", res_resultant, res_12_conf.low, res_12_conf.high), 
+      "Product "  = sprintf("%.2f [%.2f - %.2f]", res_product,   res_13_conf.low, res_13_conf.high), 
+      "Quotient"  = sprintf("%.2f [%.2f - %.2f]", res_quotient,  res_14_conf.low, res_14_conf.high), 
+      "Log"       = sprintf("%.2f [%.2f - %.2f]", res_log,       res_15_conf.low, res_15_conf.high), 
+      "Inv. Log"  = sprintf("%.2f [%.2f - %.2f]", res_inv_log,   res_16_conf.low, res_16_conf.high),
+    ) %>%
+    dplyr::select(group, Resultant:`Inv. Log`) %>%
+    knitr::kable() %>%
+    kableExtra::kable_styling(font_size = 7)
+
+  return(res)
+}
+
+tar_load(metrics_cor)
+
+```
+
+```{r}
+#| tbl-cap: Correlation between all weighting methods and the baseline method for `additive` approach and `eigen` metric
+
+metrics_cor %>% reportCor(.$type == "additive" & .$metric == "eigen")
+
+```
+
+```{r}
+#| tbl-cap: Correlation between all weighting methods and the baseline method for `multiplicative` approach and `eigen` metric
+
+metrics_cor %>% reportCor(.$type == "multiplicative" & .$metric == "eigen")
+
+```
+
+```{r}
+#| tbl-cap: Correlation between all weighting methods and the baseline method for `additive` approach and `strength` metric
+
+metrics_cor %>% reportCor(.$type == "additive" & .$metric == "strength")
+
+```
+
+```{r}
+#| tbl-cap: Correlation between all weighting methods and the baseline method for `multiplicative` approach and `eigen` metric
+
+metrics_cor %>% reportCor(.$type == "multiplicative" & .$metric == "eigen")
+
+```
+

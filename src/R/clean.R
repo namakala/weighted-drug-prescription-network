@@ -62,7 +62,7 @@ bindMetrics <- function(metrics) {
   #' approaches
 
   res <- do.call(rbind, metrics) %>%
-    subset(.$eigen != 0 & .$degree != 0 & .$strength != 0)
+    subset(.$group != "Psycholeptics + psychoanaleptics")
 
   return(res)
 }
