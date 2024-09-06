@@ -109,7 +109,7 @@ mapMetricsFun <- function(metrics, FUN) {
     tidyr::pivot_wider(names_from = method, values_from = value)
 
   tbl_stat <- tbl %>%
-    tidyr::nest(data = c(date, base:inv_log)) %>%
+    tidyr::nest(data = c(date, base:density)) %>%
     dplyr::mutate(
       "mtx"    = purrr::map(data, ~ subset(.x, select = -date) %>% as.matrix()),
       "res"    = purrr::map(mtx,  ~ FUN(.x)),
@@ -127,3 +127,4 @@ mapMetricsFun <- function(metrics, FUN) {
 
   return(res)
 }
+

@@ -14,7 +14,7 @@ regularize <- function(x, type = "rescale") {
     return(x)
   }
 
-  clean_x <- ifelse(x == Inf, 9e-2, x)
+  clean_x <- ifelse(x == Inf, 0.11, x)
   minval  <- min(clean_x, na.rm = TRUE)
   maxval  <- max(clean_x, na.rm = TRUE)
 
@@ -27,7 +27,7 @@ regularize <- function(x, type = "rescale") {
   return(res)
 }
 
-weightEntry <- function(n, dose = NULL, method = "log") {
+weightEntry <- function(n, dose = NULL, method = "density") {
   #' Weigh Entry
   #'
   #' Assign weight to the drug-prescription entry.
@@ -43,11 +43,14 @@ weightEntry <- function(n, dose = NULL, method = "log") {
     return(n)
   }
 
+  # Modify DDD = 0.1 to prevent Inf
+  mod_dose <- ifelse(dose == 0.1, 0.11, dose)
+
   # Transform the weight as diff of log base 10
-  trans <- abs(n - abs(log(dose, base = 10))) %>% regularize()
+  trans <- abs(n - abs(log(mod_dose, base = 10))) %>% regularize()
 
   # Set special rules for inverted log weights to prevent Inf
-  inv_log <- {n / trans} %>% regularize(type = "clean")
+  inv_log <- {abs(n - trans) + n} %>% regularize(type = "clean")
 
   # Set weighing methods
   res <- dplyr::case_when(
@@ -62,7 +65,7 @@ weightEntry <- function(n, dose = NULL, method = "log") {
   return(res)
 }
 
-pairByRow <- function(atc_tbl, ..., method = "log", type = "additive") {
+pairByRow <- function(atc_tbl, ..., method = "density", type = "additive") {
   #' Make Pairwise Row Combination
   #'
   #' Create a pairwise combination for each row of the input data frame.
@@ -114,7 +117,7 @@ pairByRow <- function(atc_tbl, ..., method = "log", type = "additive") {
   return(tbl_agg)
 }
 
-mkMatrix <- function(atc_tbl, ..., method = "log", type = "additive") {
+mkMatrix <- function(atc_tbl, ..., method = "density", type = "additive") {
   #' Make Matrix
   #'
   #' Create an adjacency matrix from a split ATC data frame
@@ -163,7 +166,7 @@ mkMatrix <- function(atc_tbl, ..., method = "log", type = "additive") {
   return(mtx)
 }
 
-mkGraph <- function(atc_tbl, method = "log", type = "additive") {
+mkGraph <- function(atc_tbl, method = "density", type = "additive") {
   #' Generate Graph Object
   #'
   #' Create a graph object from a pairwise combination data frame
@@ -174,9 +177,13 @@ mkGraph <- function(atc_tbl, method = "log", type = "additive") {
   #' `multiplicative`
   #' @return Medication graph from pairwises of ATC
 
+  # Discard entries which become the turning point with `method = "log"`
+  tbl <- atc_tbl %>% subset(.$dose >= 0.1 & .$dose < 10)
+
+  # Generate the graph
   graph <- tryCatch(
     {
-      mtx <- mkMatrix(atc_tbl, sum, method = method, type = type)
+      mtx <- mkMatrix(tbl, sum, method = method, type = type)
       igraph::graph_from_adjacency_matrix(
         mtx, weighted = TRUE, mode = "directed"
       ) %>%
