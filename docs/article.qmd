@@ -69,7 +69,7 @@ Resolution:
 
 ## Weighting criteria
 
-Previous studies on DPN always include medications with DDD of 1, which naturally results in an edge of 1 for each co-prescription in a patient. As such, a DPN has a baseline edges weight of $\omega_B$ that directly reflect the number of people having a particular co-prescription. The purpose of weighting a DPN is to adjust the edge weight using a standardized measure, e.g. with a defined daily dose (DDD). Since the weight is adjusted on an individual level, all baseline edge weight is set to $\omega_B$ = 1 for each approach. Five approaches used in this studies are resultant, product, quotient, absolute log, inverted absolute log, and density-based approach. Following criteria were followed when designing the weight adjustment approach:
+Previous studies on DPN always include medications with DDD of 1, which naturally results in an edge of 1 for each co-prescription in a patient. As such, a DPN has a baseline edges weight of $\omega_B$ that directly reflect the number of people having a particular co-prescription. The purpose of weighting a DPN is to adjust the edge weight using a standardized measure, e.g. with a defined daily dose (DDD). Since the weight is adjusted on an individual level, all baseline edge weight is set to $\omega_B$ = 1 for each approach. Six approaches used in this studies are resultant, product, quotient, absolute log, inverted absolute log, and density-based approach. Following criteria were followed when designing the weight adjustment approach:
 
 1. The adjusted weight of co-prescribed medications with DDD of 1 is equal to the baseline weight
 1. The adjusted weight has a range of $[0, \infty)$, limiting the weight to zero-inclusive definite real numbers
@@ -84,7 +84,7 @@ The quotient-based approach is an inversion of the product-based approach, where
 
 The absolute log approach takes the absolute difference between the baseline weight $\omega_B$ and the absolute log of DDD, or more formally $\omega_L = |\omega_B - |\log_{10}(DDD)||$. The absolute log approach is considered because the value of $\log(1)$ is zero for all log bases. Therefore, a difference of the baseline weight and the log of DDD is $\omega_B$ when DDD = 1, fulfilling the first criteria. The absolute of $\log$ reverts the negative values when DDD < 1, and thus, keeping the weight $\omega_L$ less than 1. The absolute log approach is suitable when we have a hypothesized maximum of a DDD, which can be set as the log base. Values of DDD beyond the log base will increase the weight $\omega_L$ proportionally. In this study, the log base is conveniently set to $\log_{10}$ assuming that DDD = 10 as the theoretical maximum for any medication in a population.
 
-The inverted log approach takes the quotient of the baseline weight $\omega_B$ and the absolute-log weight $\omega_L$, or more formally $\omega_I = \frac{\omega_B}{\omega_L}$. The main motivation of using an inverted log approach is to increase the weight given that DDD $\neq$ 1. Since it uses $\omega_L$ to calculate the weight, it shares the same limitation as well. For the absolute log approach with the log base is set to 10, DDD of 0.1 will return $\omega_L$ = 0, which results in $\omega_I$ = $\infty$. Since it violates the second criteria, all values returning $\infty$ is changed as 0. Despite its limitation, the inverted log approach is usable to increase the weight when DDD $\neq$ 1.
+The inverted log approach inverts absolute-log weight $\omega_L$, or more formally $\omega_I = |\omega_B - \omega_L| + \omega_B$. The main motivation of using an inverted log approach is to increase the weight given that DDD $\neq$ 1. Since it uses $\omega_L$ to calculate the weight, it shares the same limitation as well. For the absolute log approach with the log base is set to 10, DDD of 0.1 becomes the turning point, as shown in @fig-plt-sim. Since 0.1 is the lowest DDD in the dataset, we changed its value to 0.11 to avoid the turning-point problem. Despite its limitation, the inverted log approach is usable to increase the weight when DDD $\neq$ 1.
 
 The density-based approach relies on the probability density function of a normal distribution, assuming that the weight follows a normal distribution, $\omega_D \sim \mathcal{N}(\mu, \sigma)$. The parameter mean $\mu$ is set to DDD and standard deviation $\sigma$ is set to $\frac{\omega_B}{3}$ to follow the empirical rule of 68-95-99.5 [@grafarend2006linear]. Since the density when DDD = 1 may exceed 1 and violates the first criteria, the weight $\omega_D$ is rescaled by dividing with the maximum value. Density-based approach symmetrically diminishes the weight when DDD drifts away from 1.
 
@@ -95,13 +95,14 @@ The density-based approach relies on the probability density function of a norma
 | Product   | $\omega_P = DDD \cdot \omega_B$ | Aggressively adjust weight based on dose; combination of high-dose medications will have the highest weight |
 | Quotient  | $\omega_Q = \frac{DDD}{\omega_B}$ | Highlight combinations with sub-dose medications, e.g. to evaluate augmentation polypharmacy |
 | Absolute log | $\omega_L = |\omega_B - | \log_{10}(DDD) ||$ | Put less weight for DDD other than 1 |
-| Inverted $\omega_L$ | $\omega_I = \frac{\omega_B}{\omega_L}$ | Put more weight for DDD other than 1 |
+| Inverted $\omega_L$ | $\omega_I = |\omega_B - \omega_L| + \omega_B$ | Put more weight for DDD other than 1 |
 | Density | $\omega_D = \frac{1}{\frac{\omega_B}{3} \sqrt{2 \pi}} e^{-\frac{1}{2}\left(\frac{DDD - \omega_B}{\omega_B/3}\right)^2}$ | Symmetrically assign diminished weight for DDD drifting away from 1 |
 
 : Weighting approaches using defined daily dose (DDD) for a drug-prescription network {#tbl-approach tbl-colwidths="[15,30,55]"}
 
 ```{r}
-#| fig-cap: Simulation on all weighting approaches
+#| label: fig-plt-sim
+#| fig-cap: Simulation on all weighting approaches. The dashed line indicates DDD = $\omega$ = 1.
 #| fig-height: 2
 #| fig-width: 10
 

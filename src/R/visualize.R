@@ -12,8 +12,8 @@ vizSimWeight <- function() {
 
   plt <- ggplot(tbl, aes(x = ddd, y = weight)) +
     geom_vline(xintercept = 1, color = "grey60", linetype = 2) +
-    annotate("text", x = 1, y = Inf, label = "DDD = 1", hjust = 1, vjust = 1) +
-    geom_point(alpha = 0.4) +
+    geom_hline(yintercept = 1, color = "grey60", linetype = 2) +
+    geom_point(alpha = 0.2, size = 0.8) +
     facet_wrap(~method, scales = "free_y", nrow = 1) +
     labs(
       x = "Simulated defined daily dose (DDD), set as a sequence from 0 to 5 with a step of 0.1",
